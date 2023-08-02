@@ -64,6 +64,28 @@ async def handle_request(body: Dict[str, Any]):
     action = body.get("action")
     agent = PRAgent()
 
+    # if action == 'created':
+    #     if "comment" not in body:
+    #         return {}
+    #     comment_body = body.get("comment", {}).get("body")
+    #     sender = body.get("sender", {}).get("login")
+    #     if sender and 'bot' in sender:
+    #         return {}
+    #     if "issue" not in body or "pull_request" not in body["issue"]:
+    #         return {}
+    #     pull_request = body["issue"]["pull_request"]
+    #     api_url = pull_request.get("url")
+    #     await agent.handle_request(api_url, comment_body)
+
+    # elif action in ["opened"] or 'reopened' in action:
+    #     pull_request = body.get("pull_request")
+    #     if not pull_request:
+    #         return {}
+    #     api_url = pull_request.get("url")
+    #     if not api_url:
+    #         return {}
+    #     await agent.handle_request(api_url, "/review")
+
     if action == 'created':
         if "comment" not in body:
             return {}
@@ -76,15 +98,18 @@ async def handle_request(body: Dict[str, Any]):
         pull_request = body["issue"]["pull_request"]
         api_url = pull_request.get("url")
         await agent.handle_request(api_url, comment_body)
-
+        
     elif action in ["opened"] or 'reopened' in action:
         pull_request = body.get("pull_request")
-        if not pull_request:
-            return {}
-        api_url = pull_request.get("url")
-        if not api_url:
-            return {}
-        await agent.handle_request(api_url, "/review")
+        baseBranch = pull_request["base"].get("ref")
+
+        if check_string(baseBranch):
+            if not pull_request:
+                return {}
+            api_url = pull_request.get("url")
+            if not api_url:
+                return {}
+            await agent.handle_request(api_url, "/review")
 
     return {}
 
@@ -93,6 +118,8 @@ async def handle_request(body: Dict[str, Any]):
 async def root():
     return {"status": "ok"}
 
+def check_string(string):
+    return string.lower().startswith("feature") and string.lower().endswith(("codereview", "code-review"))
 
 def start():
     # Override the deployment type to app

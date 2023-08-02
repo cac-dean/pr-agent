@@ -15,7 +15,7 @@ Extra instructions from the user:
 {{ extra_instructions }}
 {% endif %}
 
-You must use the following JSON schema to format your answer:
+You must use the following JSON schema to format your answer and answer should be in bullet point if possible and in traditional chinese:
 ```json
 {
     "Code suggestions": {
