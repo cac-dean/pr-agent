@@ -6,9 +6,8 @@ from urllib.parse import urlparse
 import gitlab
 from gitlab import GitlabGetError
 
-from pr_agent.config_loader import settings
-
 from ..algo.language_handler import is_valid_file
+from ..config_loader import get_settings
 from .git_provider import EDIT_TYPE, FilePatchInfo, GitProvider
 
 logger = logging.getLogger()
@@ -17,10 +16,10 @@ logger = logging.getLogger()
 class GitLabProvider(GitProvider):
 
     def __init__(self, merge_request_url: Optional[str] = None, incremental: Optional[bool] = False):
-        gitlab_url = settings.get("GITLAB.URL", None)
+        gitlab_url = get_settings().get("GITLAB.URL", None)
         if not gitlab_url:
             raise ValueError("GitLab URL is not set in the config file")
-        gitlab_access_token = settings.get("GITLAB.PERSONAL_ACCESS_TOKEN", None)
+        gitlab_access_token = get_settings().get("GITLAB.PERSONAL_ACCESS_TOKEN", None)
         if not gitlab_access_token:
             raise ValueError("GitLab personal access token is not set in the config file")
         self.gl = gitlab.Gitlab(
@@ -254,6 +253,13 @@ class GitLabProvider(GitProvider):
     def get_issue_comments(self):
         raise NotImplementedError("GitLab provider does not support issue comments yet")
 
+    def get_repo_settings(self):
+        try:
+            contents = self.gl.projects.get(self.id_project).files.get(file_path='.pr_agent.toml', ref=self.mr.source_branch)
+            return contents
+        except Exception:
+            return ""
+
     def _parse_merge_request_url(self, merge_request_url: str) -> Tuple[str, int]:
         parsed_url = urlparse(merge_request_url)
 
@@ -298,3 +304,17 @@ class GitLabProvider(GitProvider):
 
     def get_labels(self):
         return self.mr.labels
+
+    def get_commit_messages(self) -> str:
+        """
+        Retrieves the commit messages of a pull request.
+
+        Returns:
+            str: A string containing the commit messages of the pull request.
+        """
+        try:
+            commit_messages_list = [commit['message'] for commit in self.mr.commits()._list]
+            commit_messages_str = "\n".join([f"{i + 1}. {message}" for i, message in enumerate(commit_messages_list)])
+        except:
+            commit_messages_str = ""
+        return commit_messages_str
