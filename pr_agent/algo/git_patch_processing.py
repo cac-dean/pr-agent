@@ -198,7 +198,14 @@ def convert_to_hunks_with_lines_numbers(patch: str, file) -> str:
                         patch_with_lines_str += f"{line_old}\n"
                 new_content_lines = []
                 old_content_lines = []
-            start1, size1, start2, size2 = map(int, match.groups()[:4])
+            #start1, size1, start2, size2 = map(int, match.groups()[:4])
+            #調整可能發生的int轉型錯誤
+            if match:
+                groups = match.groups()
+                start1 = int(groups[0]) if groups[0] is not None else 0
+                size1 = int(groups[1]) if groups[1] is not None else 0
+                start2 = int(groups[2]) if groups[2] is not None else 0
+                size2 = int(groups[3]) if groups[3] is not None else 0
         elif line.startswith('+'):
             new_content_lines.append(line)
         elif line.startswith('-'):
