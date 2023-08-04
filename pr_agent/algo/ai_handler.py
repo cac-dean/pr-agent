@@ -79,4 +79,4 @@ class AiHandler:
             raise TryAgain
         resp = response.choices[0]['message']['content']
         finish_reason = response.choices[0].finish_reason
-        return resp, finish_reason
+        return resp, finish_reason, response.usage

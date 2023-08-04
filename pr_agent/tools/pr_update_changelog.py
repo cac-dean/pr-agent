@@ -78,9 +78,9 @@ class PRUpdateChangelog:
         if get_settings().config.verbosity_level >= 2:
             logging.info(f"\nSystem prompt:\n{system_prompt}")
             logging.info(f"\nUser prompt:\n{user_prompt}")
-        response, finish_reason = await self.ai_handler.chat_completion(model=model, temperature=0.2,
+        response, finish_reason, tokens = await self.ai_handler.chat_completion(model=model, temperature=0.2,
                                                                         system=system_prompt, user=user_prompt)
-
+        logging.info(f"token usage - prompt: {tokens['prompt_tokens']}, completion: {tokens['completion_tokens']}, total: {tokens['total_tokens']}...")
         return response
 
     def _prepare_changelog_update(self) -> Tuple[str, str]:
