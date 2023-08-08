@@ -1,12 +1,15 @@
 import logging
 
+import litellm
 import openai
+from litellm import acompletion
 from openai.error import APIError, RateLimitError, Timeout, TryAgain
 from retry import retry
 
 from pr_agent.config_loader import get_settings
 
-OPENAI_RETRIES=5
+OPENAI_RETRIES = 5
+
 
 class AiHandler:
     """
@@ -22,15 +25,25 @@ class AiHandler:
         """
         try:
             openai.api_key = get_settings().openai.key
+            litellm.openai_key = get_settings().openai.key
+            self.azure = False
             if get_settings().get("OPENAI.ORG", None):
-                openai.organization = get_settings().openai.org
+                litellm.organization = get_settings().openai.org
             self.deployment_id = get_settings().get("OPENAI.DEPLOYMENT_ID", None)
             if get_settings().get("OPENAI.API_TYPE", None):
-                openai.api_type = get_settings().openai.api_type
+                if get_settings().openai.api_type == "azure":
+                    self.azure = True
+                    litellm.azure_key = get_settings().openai.key
             if get_settings().get("OPENAI.API_VERSION", None):
-                openai.api_version = get_settings().openai.api_version
+                litellm.api_version = get_settings().openai.api_version
             if get_settings().get("OPENAI.API_BASE", None):
-                openai.api_base = get_settings().openai.api_base
+                litellm.api_base = get_settings().openai.api_base
+            if get_settings().get("ANTHROPIC.KEY", None):
+                litellm.anthropic_key = get_settings().anthropic.key
+            if get_settings().get("COHERE.KEY", None):
+                litellm.cohere_key = get_settings().cohere.key
+            if get_settings().get("REPLICATE.KEY", None):
+                litellm.replicate_key = get_settings().replicate.key
         except AttributeError as e:
             raise ValueError("OpenAI key is required") from e
 
@@ -57,15 +70,17 @@ class AiHandler:
             TryAgain: If there is an attribute error during OpenAI inference.
         """
         try:
-            response = await openai.ChatCompletion.acreate(
-                            model=model,
-                            deployment_id=self.deployment_id,
-                            messages=[
-                                {"role": "system", "content": system},
-                                {"role": "user", "content": user}
-                            ],
-                            temperature=temperature,
-                        )
+            response = await acompletion(
+                model=model,
+                deployment_id=self.deployment_id,
+                messages=[
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user}
+                ],
+                temperature=temperature,
+                azure=self.azure,
+                force_timeout=get_settings().config.ai_timeout
+            )
         except (APIError, Timeout, TryAgain) as e:
             logging.error("Error during OpenAI inference: ", e)
             raise
@@ -75,8 +90,10 @@ class AiHandler:
         except (Exception) as e:
             logging.error("Unknown error during OpenAI inference: ", e)
             raise TryAgain from e
-        if response is None or len(response.choices) == 0:
+        if response is None or len(response["choices"]) == 0:
             raise TryAgain
-        resp = response.choices[0]['message']['content']
-        finish_reason = response.choices[0].finish_reason
+ 
+        resp = response["choices"][0]['message']['content']
+        finish_reason = response["choices"][0]["finish_reason"]
+        print(resp, finish_reason)
         return resp, finish_reason, response.usage
