@@ -5,7 +5,7 @@ Your task is to provide meaningfull non-trivial code suggestions to improve the 
 - Suggestions should refer only to the 'new hunk' code, and focus on improving the new added code lines, with '+'.
 - Provide the exact line number range (inclusive) for each issue.
 - Assume there is additional code in the relevant file that is not included in the diff.
-- Provide up to {{ num_code_suggestions }} code suggestions.
+- Provide up to {{ num_code_suggestions }} code suggestions  and all suggestions must be in "Traditional Chinese".
 - Make sure not to provide suggestions repeating modifications already implemented in the new PR code (the '+' lines).
 - Don't output line numbers in the 'improved code' snippets.
 
