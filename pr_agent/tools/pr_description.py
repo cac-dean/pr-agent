@@ -27,7 +27,6 @@ class PRDescription:
         self.main_pr_language = get_main_pr_language(
             self.git_provider.get_languages(), self.git_provider.get_files()
         )
-        commit_messages_str = self.git_provider.get_commit_messages()
 
         # Initialize the AI handler
         self.ai_handler = AiHandler()
@@ -40,7 +39,7 @@ class PRDescription:
             "language": self.main_pr_language,
             "diff": "",  # empty diff for initial calculation
             "extra_instructions": get_settings().pr_description.extra_instructions,
-            "commit_messages_str": commit_messages_str
+            "commit_messages_str": self.git_provider.get_commit_messages()
         }
     
         # Initialize the token handler
@@ -123,13 +122,14 @@ class PRDescription:
             logging.info(f"\nSystem prompt:\n{system_prompt}")
             logging.info(f"\nUser prompt:\n{user_prompt}")
 
-        response, finish_reason = await self.ai_handler.chat_completion(
+        response, finish_reason, tokens = await self.ai_handler.chat_completion(
             model=model,
             temperature=0.2,
             system=system_prompt,
             user=user_prompt
         )
 
+        logging.info(f"token usage - prompt: {tokens['prompt_tokens']}, completion: {tokens['completion_tokens']}, total: {tokens['total_tokens']}...")
         return response
 
     def _prepare_pr_answer(self) -> Tuple[str, str, List[str], str]:
