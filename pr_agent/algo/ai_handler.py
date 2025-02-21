@@ -78,7 +78,6 @@ class AiHandler:
                     {"role": "user", "content": user}
                 ],
                 temperature=temperature,
-                azure=self.azure,
                 force_timeout=get_settings().config.ai_timeout
             )
         except (APIError, Timeout, TryAgain) as e:

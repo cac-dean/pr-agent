@@ -5,6 +5,7 @@ MAX_TOKENS = {
     'gpt-3.5-turbo-16k': 16000,
     'gpt-3.5-turbo-16k-0613': 16000,
     'gpt-4': 8000,
+    'gpt-4o-mini': 128000,
     'gpt-4-0613': 8000,
     'gpt-4-32k': 32000,
     'claude-instant-1': 100000,
