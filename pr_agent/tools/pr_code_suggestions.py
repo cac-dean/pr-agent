@@ -34,6 +34,7 @@ class PRCodeSuggestions:
             "diff": "",  # empty diff for initial calculation
             "num_code_suggestions": get_settings().pr_code_suggestions.num_code_suggestions,
             "extra_instructions": get_settings().pr_code_suggestions.extra_instructions,
+            "commit_messages_str": self.git_provider.get_commit_messages(),
         }
         self.token_handler = TokenHandler(self.git_provider.pr,
                                           self.vars,
@@ -57,12 +58,12 @@ class PRCodeSuggestions:
 
     async def _prepare_prediction(self, model: str):
         logging.info('Getting PR diff...')
-        # we are using extended hunk with line numbers for code suggestions
         self.patches_diff = get_pr_diff(self.git_provider,
                                         self.token_handler,
                                         model,
                                         add_line_numbers_to_hunks=True,
                                         disable_extra_lines=True)
+
         logging.info('Getting AI prediction...')
         self.prediction = await self._get_prediction(model)
 
@@ -75,9 +76,9 @@ class PRCodeSuggestions:
         if get_settings().config.verbosity_level >= 2:
             logging.info(f"\nSystem prompt:\n{system_prompt}")
             logging.info(f"\nUser prompt:\n{user_prompt}")
-        response, finish_reason = await self.ai_handler.chat_completion(model=model, temperature=0.2,
+        response, finish_reason, tokens = await self.ai_handler.chat_completion(model=model, temperature=0.2,
                                                                         system=system_prompt, user=user_prompt)
-
+        logging.info(f"token usage - prompt: {tokens['prompt_tokens']}, completion: {tokens['completion_tokens']}, total: {tokens['total_tokens']}...")
         return response
 
     def _prepare_pr_code_suggestions(self) -> str:
